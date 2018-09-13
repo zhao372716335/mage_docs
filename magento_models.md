@@ -104,8 +104,20 @@ Mage::getModel('Mage_Core_Model_Layout'),直接返回传递的字符串
         $config = $this->_xml->global->{$groupType.'s'}->{$group};
 
         // First - check maybe the entity class was rewritten
+        // 查看是否存在<rewrite>标签，如果存在，则使用rewrite里面的值
+        /××
+         ×  <models>
+         ×      <sales>
+                    <rewrite>
+                        <billing_agreement>Adyen_Payment_Model_Billing_Agreement</billing_agreement>
+                    </rewrite>
+                </sales>
+            </models>
+        ×
+        ×/
         $className = null;
         if (isset($config->rewrite->$class)) {
+            // 上面 ××注释，如果访问Mage::getModel('sales/billing_agreement'),下面的$className,就是上面的值：Adyen_Payment_Model_Billing_Agreement
             $className = (string)$config->rewrite->$class;
         } else {
             /**
@@ -123,25 +135,46 @@ Mage::getModel('Mage_Core_Model_Layout'),直接返回传递的字符串
         }
 
         // Second - if entity is not rewritten then use class prefix to form class name
+        // 如果没有被重写等，则直接从配置中读取出来
         if (empty($className)) {
+        
             if (!empty($config)) {
+                // 直接读取出来class中的值。
+                /××
+                 × 譬如：
+                 × <global>
+                    <models>
+                        <adyen>
+                            <class>Adyen_Payment_Model</class>
+                            <resourceModel>adyen_resource</resourceModel>
+                        </adyen>
+                 ×  如果是这个配置，$className 返回的是 Adyen_Payment_Model
+                 ×/
                 $className = $config->getClassName();
+                
             }
+            // 如果配置中没有配置，下面的代码会自动拼一个文件路径作为默认，因此models的配置也可以不写，直接在Adyen_Payment_Model下面新建一个
+            // 就可以通过Mage::getModel()找到，然后如果你的model放的不是这个位置，那么必须在配置文件中加上
+            //
             if (empty($className)) {
                 $className = 'mage_'.$group.'_'.$groupType;
             }
+            // 让 $class拼到最后
             if (!empty($class)) {
                 $className .= '_'.$class;
             }
+            // 首字母大写
             $className = uc_words($className);
         }
-
+        // 保存到类变量中，下次使用Mage::getModel('xxx/yyyy'),如果参数相同，则直接从类变量中取出，减少计算。
         $this->_classNameCache[$groupRootNode][$group][$class] = $className;
         return $className;
     }
 ```
 
-在上面代码中已经加入了注释
+这样Mage::getModel('xxx/yyy'),通过xml的配置，就可以找到相应的model的class，然后实例化
+
+对于block，helpers等，在gloabals节点下的配置，都是这个函数：getGroupedClassName() 返回相应的className的
 
 
 
