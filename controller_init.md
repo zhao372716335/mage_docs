@@ -137,7 +137,46 @@ public function init()
 ```
 
 
+在
+Mage_Core_Controller_Varien_Action
+中可以看到
 
+```
+public function preDispatch()
+    {
+    ...
+    ...
+    Mage::dispatchEvent('controller_action_predispatch', array('controller_action' => $this));
+        Mage::dispatchEvent('controller_action_predispatch_' . $this->getRequest()->getRouteName(),
+            array('controller_action' => $this));
+        Mage::dispatchEvent('controller_action_predispatch_' . $this->getFullActionName(),
+            array('controller_action' => $this));
+    }
+    
+ ```
+ 
+ 这里抛出了event，因此可以在controller开始之前通过event动态更改一些东西
+ 
+ 另外在controller结束的时候也有event
+ 
+ ```
+ public function postDispatch()
+    {
+        if ($this->getFlag('', self::FLAG_NO_POST_DISPATCH)) {
+            return;
+        }
+
+        Mage::dispatchEvent(
+            'controller_action_postdispatch_'.$this->getFullActionName(),
+            array('controller_action'=>$this)
+        );
+        Mage::dispatchEvent(
+            'controller_action_postdispatch_'.$this->getRequest()->getRouteName(),
+            array('controller_action'=>$this)
+        );
+        Mage::dispatchEvent('controller_action_postdispatch', array('controller_action'=>$this));
+    }
+```
 
 
 
